@@ -117,6 +117,42 @@ curl http://127.0.0.1:8317/v1/chat/completions \
 
 请从账号实际模型列表选择模型。国内模型形如 `wb/<模型 ID>`，国际模型形如 `wb-ai/<模型 ID>`。登录会话有效期为五分钟，超时后重新发起即可。
 
+## 账号导入与导出
+
+重启 CPA 后，在管理页面打开 **WorkBuddy** 控制面板，在账号列表中勾选账号即可导出；导入时选择 JSON 文件，先查看脱敏预览，再确认要导入的记录。导入和导出都使用 UTF-8 JSON，不会修改 WorkBuddy 桌面端的认证文件。
+
+文件可以是账号数组，也可以是参考实现使用的包装形式：`{"accounts":[...]}`、`{"data":[...]}` 或 `{"records":[...]}`。每条记录的核心字段如下：
+
+| 字段 | 必需 | 说明 |
+| --- | --- | --- |
+| `access_token` | 是 | 访问令牌；导入时为空记录会跳过 |
+| `refresh_token` | 否 | 刷新令牌 |
+| `uid` | 是（当前插件） | WorkBuddy 账号 UID |
+| `nickname` / `email` | 否 | 脱敏预览用的显示信息 |
+| `domain` | 是（当前插件） | `copilot.tencent.com`（国内）或 `workbuddy.ai`/`codebuddy.ai`（国际） |
+| `expiresAt` | 否 | epoch 毫秒；导出会保留毫秒精度 |
+| `refreshExpiresAt` | 否 | epoch 毫秒 |
+| `auth_raw` | 否 | 兼容参考实现的原始身份块，导入时只用于恢复企业身份等辅助字段 |
+
+同一站点、同一 UID 和企业作用域的记录视为同一账号，批量文件中后出现的记录覆盖前一条；已存在账号也会覆盖其令牌但保留 CPA 的宿主管理元数据。空令牌、越界索引、错误 JSON、未知域名和属于另一站点的记录会计入“跳过”，不会写入凭据库。导入失败时错误提示只包含文件位置或字段原因，不显示令牌。
+
+示例：
+
+```json
+[
+  {
+    "access_token": "<access-token>",
+    "refresh_token": "<refresh-token>",
+    "uid": "100000000001",
+    "nickname": "账号A",
+    "domain": "copilot.tencent.com",
+    "expiresAt": 1760000000000
+  }
+]
+```
+
+导出响应只对明确勾选的账号生成，含令牌的响应使用 `Cache-Control: no-store`；请像密码备份一样保护导出文件，传输后及时删除，不要把它提交到 Git、日志或问题报告。导入不会主动刷新令牌，令牌失效仍需重新登录或等待现有刷新流程处理。
+
 ## Docker 部署
 
 将插件目录挂载到容器，并确保配置中的 `plugins.dir` 指向容器内目录。例如，在现有 Compose 服务的 `volumes` 中加入：

@@ -108,6 +108,110 @@ func (s *Service) HandleManagement(ctx context.Context, callbackID string, call 
 			return ManagementResult{}, err
 		}
 		return jsonManagementResult(http.StatusOK, resp)
+
+	case method == http.MethodPost && path == base+"/transfer/preview":
+		var req struct {
+			Text string `json:"text"`
+		}
+		if err := decode(body, &req); err != nil {
+			return ManagementResult{}, err
+		}
+		preview, err := previewTransferFile([]byte(req.Text))
+		if err != nil {
+			return ManagementResult{}, err
+		}
+		return jsonManagementResult(http.StatusOK, preview)
+
+	case method == http.MethodPost && path == base+"/transfer/export":
+		var req struct {
+			AuthIndexes []string `json:"auth_indexes"`
+		}
+		if err := decode(body, &req); err != nil {
+			return ManagementResult{}, err
+		}
+		if len(req.AuthIndexes) == 0 {
+			return ManagementResult{}, failure("invalid_transfer", "auth_indexes must contain at least one account", 400)
+		}
+		wanted := make(map[string]bool, len(req.AuthIndexes))
+		for _, index := range req.AuthIndexes {
+			if strings.TrimSpace(index) != "" {
+				wanted[index] = true
+			}
+		}
+		entries, err := hostAuthList(call)
+		if err != nil {
+			return ManagementResult{}, err
+		}
+		records := make([]transferRecord, 0, len(wanted))
+		for _, entry := range entries {
+			if !wanted[entry.AuthIndex] {
+				continue
+			}
+			rec, getErr := hostAuthGet(call, entry.AuthIndex)
+			if getErr != nil {
+				return ManagementResult{}, getErr
+			}
+			out, outErr := transferRecordOf(rec)
+			if outErr != nil {
+				return ManagementResult{}, outErr
+			}
+			records = append(records, out)
+		}
+		if len(records) == 0 {
+			return ManagementResult{}, failure("auth_not_found", "none of the selected accounts was found", 409)
+		}
+		return jsonManagementResult(http.StatusOK, map[string]any{"accounts": records})
+
+	case method == http.MethodPost && path == base+"/transfer/import":
+		var req struct {
+			Text    string `json:"text"`
+			Indexes []int  `json:"indexes"`
+		}
+		if err := decode(body, &req); err != nil {
+			return ManagementResult{}, err
+		}
+		records, err := parseTransferFile([]byte(req.Text))
+		if err != nil {
+			return ManagementResult{}, err
+		}
+		if len(req.Indexes) == 0 {
+			return ManagementResult{}, failure("invalid_transfer", "indexes must contain at least one record", 400)
+		}
+		changes, imported, skipped := mergeTransferRecordsAll(records, req.Indexes)
+		if len(changes) == 0 {
+			return jsonManagementResult(http.StatusOK, map[string]int{"imported": 0, "skipped": skipped})
+		}
+		existing := make(map[string]hostAuthRecord)
+		entries, listErr := hostAuthList(call)
+		if listErr != nil {
+			return ManagementResult{}, listErr
+		}
+		for _, entry := range entries {
+			rec, getErr := hostAuthGet(call, entry.AuthIndex)
+			if getErr != nil {
+				continue
+			}
+			id, _, idErr := credentialIdentity(rec.Stored)
+			if idErr == nil {
+				existing[id] = rec
+			}
+		}
+		for id, stored := range changes {
+			auth, authErr := authFromCredential(stored, nil)
+			if authErr != nil {
+				return ManagementResult{}, failure("invalid_transfer", "imported credential could not be normalized", 400)
+			}
+			if rec, ok := existing[id]; ok {
+				auth.FileName = rec.FileName
+				if saveErr := hostAuthSaveCredential(call, rec, auth); saveErr != nil {
+					return ManagementResult{}, failure("host_save_failed", "imported credential could not be stored", 502)
+				}
+			} else if saveErr := hostAuthSaveNewCredential(call, auth); saveErr != nil {
+				return ManagementResult{}, failure("host_save_failed", "imported credential could not be stored", 502)
+			}
+		}
+		return jsonManagementResult(http.StatusOK, map[string]int{"imported": imported, "skipped": skipped})
+
 	case method == http.MethodPost && path == base+"/credits":
 		var req struct {
 			AuthIndex string `json:"auth_index"`

@@ -1297,6 +1297,11 @@
         <button type="button" id="btnBonusAll" class="btn-secondary" onclick="runBatch('/daily-bonus', 'btnBonusAll', '国际一键点亮')">
           <span>⚡ 国际一键点亮</span>
         </button>
+        <button type="button" id="btnTransferExport" class="btn-secondary" onclick="exportSelectedAccounts()">
+          <span>⬇️ 导出选中账号</span>
+        </button>
+        <label class="btn-secondary" for="transferImportFile">⬆️ 导入账号</label>
+        <input id="transferImportFile" type="file" accept="application/json,.json" hidden onchange="importAccountsFromFile(event)">
 
         <div class="control-spacer"></div>
 
@@ -2107,7 +2112,14 @@
         info.className = "cred-info";
         const nameRow = document.createElement("div");
         nameRow.className = "cred-name";
-        const emailSpan = document.createElement("span");
+        const selectBox = document.createElement("input");
+         selectBox.type = "checkbox";
+         selectBox.className = "transfer-select";
+         selectBox.dataset.authIndex = acc.auth_index || "";
+         selectBox.title = "选择此账号用于导出";
+         selectBox.onclick = (e) => e.stopPropagation();
+         nameRow.appendChild(selectBox);
+         const emailSpan = document.createElement("span");
         emailSpan.className = "cred-email";
         const rawTitle = acc.label || acc.name || acc.id || acc.auth_index;
         emailSpan.textContent = formatAccountName(rawTitle);
@@ -2524,6 +2536,45 @@
         btn.disabled = false;
         renderDashboard();
       }
+    }
+
+    async function exportSelectedAccounts() {
+      const accountIds = Array.from(document.querySelectorAll(".transfer-select:checked"))
+        .map(input => input.dataset.authIndex).filter(Boolean);
+      if (accountIds.length === 0) { showToast("请先勾选要导出的账号", "error"); return; }
+      try {
+        const data = await apiFetch(MGMT_BASE + "/transfer/export", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ auth_indexes: accountIds })
+        });
+        const blob = new Blob([JSON.stringify(data.accounts || [], null, 2)], { type: "application/json;charset=utf-8" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob); link.download = "workbuddy-accounts.json"; link.click();
+        URL.revokeObjectURL(link.href);
+        showToast(`已导出 ${data.accounts.length} 个账号`, "success");
+      } catch (err) { if (err.status !== 401) showToast("导出失败：" + err.message, "error"); }
+    }
+
+    async function importAccountsFromFile(event) {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = "";
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const preview = await apiFetch(MGMT_BASE + "/transfer/preview", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text })
+        });
+        const count = (preview.accounts || []).length;
+        const tokenCount = (preview.accounts || []).filter(account => account.has_token).length;
+        if (!window.confirm(`文件包含 ${count} 条记录，其中 ${tokenCount} 条有访问令牌。确认导入？令牌不会显示在预览中。`)) return;
+        const indexes = Array.from({ length: count }, (_, index) => index);
+        const result = await apiFetch(MGMT_BASE + "/transfer/import", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, indexes })
+        });
+        await loadDashboard(false);
+        showToast(`导入完成：${result.imported} 条，跳过 ${result.skipped} 条`, "success");
+      } catch (err) { if (err.status !== 401) showToast("导入失败：" + err.message, "error"); }
     }
 
     // ---- Boot ----

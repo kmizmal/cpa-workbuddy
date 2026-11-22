@@ -159,6 +159,33 @@ func parseHostAuthRecord(authIndex, name, path string, rawJSON []byte) (hostAuth
 	}, nil
 }
 
+func hostAuthSaveNewCredential(call func(string, []byte) ([]byte, error), auth AuthData) error {
+	if call == nil || strings.TrimSpace(auth.FileName) == "" {
+		return failure("host_unavailable", "host auth callback is unavailable", 503)
+	}
+	saveReq, err := json.Marshal(struct {
+		Name string          `json:"name"`
+		JSON json.RawMessage `json:"json"`
+	}{Name: filepath.Base(auth.FileName), JSON: auth.StorageJSON})
+	if err != nil {
+		return err
+	}
+	reply, err := call("host.auth.save", saveReq)
+	if err != nil {
+		return err
+	}
+	var envelope struct {
+		OK    bool `json:"ok"`
+		Error *struct {
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(reply, &envelope); err != nil || !envelope.OK {
+		return failure("host_save_failed", "host failed to save imported credential", 502)
+	}
+	return nil
+}
+
 func hostAuthSaveCredential(call func(string, []byte) ([]byte, error), rec hostAuthRecord, nextAuth AuthData) error {
 	if call == nil || strings.TrimSpace(rec.FileName) == "" {
 		return nil
