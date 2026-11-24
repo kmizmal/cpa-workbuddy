@@ -31,6 +31,24 @@ type TokenUsage struct {
 	TotalTokens  int64 `json:"total_tokens"`
 }
 
+// tokenUsageFields holds the usage shapes used by OpenAI Chat, Anthropic
+// Messages, and OpenAI Responses. Responses nests its usage object under the
+// response.completed event's "response" field.
+type tokenUsageFields struct {
+	PromptTokens        int64 `json:"prompt_tokens"`
+	CompletionTokens    int64 `json:"completion_tokens"`
+	TotalTokens         int64 `json:"total_tokens"`
+	InputTokens         int64 `json:"input_tokens"`
+	OutputTokens        int64 `json:"output_tokens"`
+	CacheReadInput      int64 `json:"cache_read_input_tokens"`
+	PromptTokensDetails *struct {
+		CachedTokens int64 `json:"cached_tokens"`
+	} `json:"prompt_tokens_details"`
+	InputTokensDetails *struct {
+		CachedTokens int64 `json:"cached_tokens"`
+	} `json:"input_tokens_details"`
+}
+
 // UsageEvent records one completed chat execution for runtime usage statistics.
 type UsageEvent struct {
 	ID               string     `json:"id"`
@@ -787,88 +805,92 @@ func extractTokenUsageFromPayload(payload []byte) (TokenUsage, bool) {
 	if len(trimmed) == 0 {
 		return TokenUsage{}, false
 	}
-	if bytes.HasPrefix(trimmed, []byte("data:")) {
-		var best TokenUsage
-		var found bool
-		for line := range bytes.SplitSeq(trimmed, []byte("\n")) {
-			line = bytes.TrimSpace(line)
-			if !bytes.HasPrefix(line, []byte("data:")) {
-				continue
-			}
-			data := bytes.TrimSpace(bytes.TrimPrefix(line, []byte("data:")))
-			if len(data) == 0 || bytes.Equal(data, []byte("[DONE]")) {
-				continue
-			}
-			if u, ok := extractTokenUsageFromJSON(data); ok {
-				best = u
-				found = true
-			}
-		}
-		return best, found
+	if json.Valid(trimmed) {
+		return extractTokenUsageFromJSON(trimmed)
 	}
-	return extractTokenUsageFromJSON(trimmed)
+	// Translated downstream frames can start with event:, id:, or retry:
+	// lines before their data: line. Use the SSE decoder rather than requiring
+	// the payload itself to start with "data:".
+	var decoder eventStreamDecoder
+	var best TokenUsage
+	var found bool
+	frame := append(append([]byte(nil), trimmed...), '\n', '\n')
+	if _, err := decoder.feed(frame, func(event streamEvent) (bool, error) {
+		if !event.hasData {
+			return false, nil
+		}
+		if u, ok := extractTokenUsageFromJSON(event.data); ok {
+			best = u
+			found = true
+		}
+		return false, nil
+	}, func() error { return nil }); err != nil {
+		return TokenUsage{}, false
+	}
+	return best, found
 }
 
 func extractTokenUsageFromJSON(data []byte) (TokenUsage, bool) {
 	var root struct {
-		Usage *struct {
-			PromptTokens        int64 `json:"prompt_tokens"`
-			CompletionTokens    int64 `json:"completion_tokens"`
-			TotalTokens         int64 `json:"total_tokens"`
-			InputTokens         int64 `json:"input_tokens"`
-			OutputTokens        int64 `json:"output_tokens"`
-			CacheReadInput      int64 `json:"cache_read_input_tokens"`
-			PromptTokensDetails *struct {
-				CachedTokens int64 `json:"cached_tokens"`
-			} `json:"prompt_tokens_details"`
-		} `json:"usage"`
+		Usage   *tokenUsageFields `json:"usage"`
 		Message *struct {
-			Usage *struct {
-				InputTokens    int64 `json:"input_tokens"`
-				OutputTokens   int64 `json:"output_tokens"`
-				CacheReadInput int64 `json:"cache_read_input_tokens"`
-			} `json:"usage"`
+			Usage *tokenUsageFields `json:"usage"`
 		} `json:"message"`
+		Response *struct {
+			Usage *tokenUsageFields `json:"usage"`
+		} `json:"response"`
 	}
 	if err := json.Unmarshal(data, &root); err != nil {
 		return TokenUsage{}, false
 	}
 	if root.Usage != nil {
-		in := root.Usage.PromptTokens
-		if in == 0 {
-			in = root.Usage.InputTokens
-		}
-		out := root.Usage.CompletionTokens
-		if out == 0 {
-			out = root.Usage.OutputTokens
-		}
-		cached := root.Usage.CacheReadInput
-		if cached == 0 && root.Usage.PromptTokensDetails != nil {
-			cached = root.Usage.PromptTokensDetails.CachedTokens
-		}
-		tot := root.Usage.TotalTokens
-		if tot == 0 {
-			tot = in + out
-		}
-		if in > 0 || out > 0 || tot > 0 || cached > 0 {
-			return TokenUsage{
-				InputTokens:  in,
-				OutputTokens: out,
-				CachedTokens: cached,
-				TotalTokens:  tot,
-			}, true
+		if usage, ok := tokenUsageFromFields(root.Usage); ok {
+			return usage, true
 		}
 	}
 	if root.Message != nil && root.Message.Usage != nil {
-		u := root.Message.Usage
-		if u.InputTokens > 0 || u.OutputTokens > 0 || u.CacheReadInput > 0 {
-			return TokenUsage{
-				InputTokens:  u.InputTokens,
-				OutputTokens: u.OutputTokens,
-				CachedTokens: u.CacheReadInput,
-				TotalTokens:  u.InputTokens + u.OutputTokens,
-			}, true
+		if usage, ok := tokenUsageFromFields(root.Message.Usage); ok {
+			return usage, true
 		}
+	}
+	if root.Response != nil && root.Response.Usage != nil {
+		if usage, ok := tokenUsageFromFields(root.Response.Usage); ok {
+			return usage, true
+		}
+	}
+	return TokenUsage{}, false
+}
+
+func tokenUsageFromFields(fields *tokenUsageFields) (TokenUsage, bool) {
+	if fields == nil {
+		return TokenUsage{}, false
+	}
+	in := fields.PromptTokens
+	if in == 0 {
+		in = fields.InputTokens
+	}
+	out := fields.CompletionTokens
+	if out == 0 {
+		out = fields.OutputTokens
+	}
+	cached := fields.CacheReadInput
+	if cached == 0 && fields.PromptTokensDetails != nil {
+		cached = fields.PromptTokensDetails.CachedTokens
+	}
+	if cached == 0 && fields.InputTokensDetails != nil {
+		cached = fields.InputTokensDetails.CachedTokens
+	}
+	total := fields.TotalTokens
+	if total == 0 {
+		total = in + out
+	}
+	if in > 0 || out > 0 || total > 0 || cached > 0 {
+		return TokenUsage{
+			InputTokens:  in,
+			OutputTokens: out,
+			CachedTokens: cached,
+			TotalTokens:  total,
+		}, true
 	}
 	return TokenUsage{}, false
 }

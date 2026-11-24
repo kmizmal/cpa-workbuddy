@@ -43,6 +43,28 @@ func TestExtractTokenUsageFromPayload(t *testing.T) {
 			t.Fatalf("unexpected usage: %+v", u)
 		}
 	})
+
+	t.Run("translated claude sse", func(t *testing.T) {
+		payload := []byte("event: message_delta\ndata: {\"type\":\"message_delta\",\"usage\":{\"input_tokens\":80,\"output_tokens\":30,\"cache_read_input_tokens\":10}}\n\n")
+		u, ok := extractTokenUsageFromPayload(payload)
+		if !ok {
+			t.Fatal("expected usage to be extracted from translated Claude SSE")
+		}
+		if u.InputTokens != 80 || u.OutputTokens != 30 || u.TotalTokens != 110 || u.CachedTokens != 10 {
+			t.Fatalf("unexpected usage: %+v", u)
+		}
+	})
+
+	t.Run("translated responses sse", func(t *testing.T) {
+		payload := []byte("event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"usage\":{\"input_tokens\":120,\"output_tokens\":45,\"total_tokens\":165,\"input_tokens_details\":{\"cached_tokens\":20}}}}\n\n")
+		u, ok := extractTokenUsageFromPayload(payload)
+		if !ok {
+			t.Fatal("expected usage to be extracted from translated Responses SSE")
+		}
+		if u.InputTokens != 120 || u.OutputTokens != 45 || u.TotalTokens != 165 || u.CachedTokens != 20 {
+			t.Fatalf("unexpected usage: %+v", u)
+		}
+	})
 }
 
 func TestUsageTrackerRecordSnapshotAndReset(t *testing.T) {
