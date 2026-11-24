@@ -130,8 +130,20 @@ func TestNativeABI(t *testing.T) {
 			if err := json.Unmarshal(envelope.Result, &result); err != nil {
 				t.Fatal(err)
 			}
-			if !envelope.OK || len(result.Routes) != 8 || result.Routes[0].Method != "GET" || result.Routes[0].Path != "/v0/management/plugins/cpa-workbuddy/status" || len(result.Resources) != 1 || result.Resources[0].Path != "/panel" {
+			if !envelope.OK || len(result.Routes) != 13 || result.Routes[0].Method != "GET" || result.Routes[0].Path != "/v0/management/plugins/cpa-workbuddy/status" || len(result.Resources) != 1 || result.Resources[0].Path != "/panel" {
 				t.Fatalf("unexpected management registration: %s", raw)
+			}
+			transferRoutes := map[string]bool{}
+			for _, route := range result.Routes {
+				if route.Method == "POST" {
+					transferRoutes[route.Path] = true
+				}
+			}
+			for _, path := range []string{"preview", "export", "import"} {
+				want := "/v0/management/plugins/cpa-workbuddy/transfer/" + path
+				if !transferRoutes[want] {
+					t.Fatalf("management.register is missing %s: %s", want, raw)
+				}
 			}
 		case "status":
 			var result struct {

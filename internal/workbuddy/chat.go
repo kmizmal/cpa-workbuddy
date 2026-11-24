@@ -244,10 +244,39 @@ func (s *Service) execute(ctx context.Context, method string, raw []byte, call f
 		prepared.body = nil
 		prepared.request.Body = nil
 		read := func() ([]byte, bool, error) { return lease.read(ctx) }
+		startedAt := time.Now()
+		siteID := prepared.key.site
+		if siteID == "" {
+			siteID = "workbuddy"
+		}
+		factor := s.lookupModelCreditFactor(siteID, req.Model)
 		if !streaming {
 			payload, parseErr := prepared.consume(read, nil)
 			closeErr := cleanup()
 			finish()
+			status := "success"
+			var errText string
+			if parseErr != nil || closeErr != nil {
+				status = "error"
+				errText = errors.Join(parseErr, closeErr).Error()
+			}
+			tokUsage, _ := extractTokenUsageFromPayload(payload)
+			estCredits := 0.0
+			if status == "success" {
+				estCredits = factor
+			}
+			s.usage.record(UsageEvent{
+				AuthIndex:        req.AuthID,
+				Site:             siteID,
+				Model:            req.Model,
+				Streaming:        false,
+				Status:           status,
+				DurationMs:       time.Since(startedAt).Milliseconds(),
+				Usage:            tokUsage,
+				CreditFactor:     factor,
+				EstimatedCredits: estCredits,
+				Error:            errText,
+			})
 			if parseErr != nil || closeErr != nil {
 				return nil, errors.Join(parseErr, closeErr)
 			}
@@ -256,16 +285,39 @@ func (s *Service) execute(ctx context.Context, method string, raw []byte, call f
 		downstreamID := req.StreamID
 		go func() {
 			defer finish()
+			var streamUsage TokenUsage
 			_, streamErr := prepared.consume(read, func(payload []byte) error {
 				if ctx.Err() != nil {
 					return failure("request_cancelled", "WorkBuddy request was cancelled or expired", 408)
+				}
+				if u, ok := extractTokenUsageFromPayload(payload); ok {
+					streamUsage = u
 				}
 				return hostRPC(call, "host.stream.emit", struct {
 					StreamID string `json:"stream_id"`
 					Payload  []byte `json:"payload"`
 				}{downstreamID, payload}, nil)
 			})
-			streamErr = errors.Join(streamErr, lease.closeUpstream())
+			status := "success"
+			var errText string
+			estCredits := factor
+			if streamErr != nil {
+				status = "error"
+				errText = streamErr.Error()
+				estCredits = 0
+			}
+			s.usage.record(UsageEvent{
+				AuthIndex:        req.AuthID,
+				Site:             siteID,
+				Model:            req.Model,
+				Streaming:        true,
+				Status:           status,
+				DurationMs:       time.Since(startedAt).Milliseconds(),
+				Usage:            streamUsage,
+				CreditFactor:     factor,
+				EstimatedCredits: estCredits,
+				Error:            errText,
+			})
 			if closeErr := lease.closeDownstream(streamErr); closeErr != nil {
 				lease.reportCleanup("downstream", closeErr)
 			}

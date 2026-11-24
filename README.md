@@ -32,33 +32,20 @@
 - **凭证自动刷新与配额查看**：接入 CPA 的保存、刷新、请求恢复与 `QuotaProvider` 配额接口，支持个人套餐、活动奖励包与企业额度查询。
 - **每日签到与自动调度**：支持国内账号每日签到（+100 积分）、国际账号成长中心热力图活跃点亮（+30/50 积分次日到账），以及围绕每日固定时间点 ±3 小时随机浮动的自动定时执行。
 - **独立控制面板**：内嵌 `/v0/resource/plugins/cpa-workbuddy/panel` 控制面板，提供凭证状态、剩余积分明细、手动/批量签到与模型前缀开关配置。
+- **账号导入导出**：控制面板勾选账号导出为 JSON，导入先展示脱敏预览再写入；同站点、同 UID 与企业作用域的记录按后出现者覆盖。
+- **用量统计**：记录每次流式与非流式对话的 token 消耗，按本地模型倍率估算积分，并在面板汇总最近请求。
+
 ## 安装与配置
 
 使用支持原生插件及 JSON schema 10 的官方 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)；推荐 CPA `v8.0.69` 或更新版本。管理页面使用官方 CPAMC。
 
 ### 通过插件商店安装
 
-官方 CPA 插件商店支持追加第三方来源。本项目的注册表地址固定为：
+1. 重启 CPA 后在管理页面打开插件商店，搜索 **CPA WorkBuddy**。
+2. 选择安装。商店按当前 CPA 的平台和架构选择发布包，核对发布摘要后将动态库写入 `plugins/<goos>/<goarch>/cpa-workbuddy-v<版本>.<扩展名>`，并把 `cpa-workbuddy` 写入配置启用。按页面提示重启 CPA 后生效。
+3. 更新版本时在商店中重新安装即可。
 
-```text
-https://raw.githubusercontent.com/ygq-future/cpa-workbuddy/main/registry.json
-```
-
-1. 在 CPA 配置的 `plugins.store-sources` 中加入该地址；它与内置官方来源并存，公开仓库不需要 `store-auth`：
-
-```yaml
-plugins:
-  enabled: true
-  dir: "plugins"
-  store-sources:
-    - "https://raw.githubusercontent.com/ygq-future/cpa-workbuddy/main/registry.json"
-```
-
-2. 重启 CPA，在管理页面打开插件商店。来源列表会多出一项，名称为地址主机名 `raw.githubusercontent.com`。
-3. 在商店中找到 **CPA WorkBuddy** 并安装。商店按当前 CPA 的平台和架构选择发布包，核对发布摘要后将动态库写入 `plugins/<goos>/<goarch>/cpa-workbuddy-v<版本>.<扩展名>`，并把 `cpa-workbuddy` 写入配置启用。按页面提示重启 CPA 后生效。
-4. 商店以本仓库最新 GitHub Release 的 tag 作为版本来源；更新版本时在商店中重新安装即可。
-
-商店通过 `raw.githubusercontent.com` 读取注册表、通过 `api.github.com` 读取 Release 元数据，再从 GitHub Release 下载 ZIP 和 `checksums.txt`。CPA 的网络需允许这些请求及资产下载的重定向地址；网络受限时配置 CPA 代理，或改用手动安装。
+商店通过 `api.github.com` 读取 Release 元数据，再从 GitHub Release 下载 ZIP 和 `checksums.txt`。CPA 的网络需允许这些请求及资产下载的重定向地址；网络受限时配置 CPA 代理，或改用手动安装。
 
 ### 手动安装
 
@@ -94,6 +81,7 @@ plugins:
 - `cn_model_prefix` / `intl_model_prefix`：分别控制国内 `wb/` 与国际 `wb-ai/` 模型返回前缀（默认均为 `true`）。关闭某站点前缀后，模型列表直接返回原始模型 ID，且请求路由仍向后兼容带该站点前缀的模型名。若两侧同时关闭，同名模型会在国内与国际账号间共同调度。
 - `auto_checkin_enabled` / `auto_checkin_time`：是否开启每日定时自动签到/成长点亮，以及每日基准时间（24 小时制 `HH:MM`，实际触发会在 `±3h` 内随机浮动）。
 - **控制面板入口**：重启 CPA 后可通过管理页面插件菜单 **WorkBuddy** 或直接访问 `http://<CPA地址>/v0/resource/plugins/cpa-workbuddy/panel`。面板自动同步 CPA 主题并读取当前登录态的 Management Key（独立访问未登录时可在弹窗手动输入），支持查看凭证与剩余积分、执行手动/批量签到以及在线修改配置。
+- **本地持久化**：面板保存的配置写入 `data/cpa-workbuddy/config.json`，重启后优先于 CPA 下发的 YAML；用量统计写入 `data/cpa-workbuddy/usage.json`，保留最近 7 天及最多 500 条请求记录。路径相对 CPA 工作目录，可用 `CPA_WORKBUDDY_CONFIG_PATH` 与 `CPA_WORKBUDDY_USAGE_PATH` 覆盖；删除对应文件即可恢复宿主配置或清空用量。
 
 重启 CPA，在管理页面的插件列表确认 `cpa-workbuddy` 已加载并启用。
 插件复用 CPA 的网络代理、凭证目录及管理鉴权。管理密钥与客户端 API key 分别由 CPA 配置。
@@ -129,7 +117,7 @@ curl http://127.0.0.1:8317/v1/chat/completions \
 | `refresh_token` | 否 | 刷新令牌 |
 | `uid` | 是（当前插件） | WorkBuddy 账号 UID |
 | `nickname` / `email` | 否 | 脱敏预览用的显示信息 |
-| `domain` | 是（当前插件） | `copilot.tencent.com`（国内）或 `workbuddy.ai`/`codebuddy.ai`（国际） |
+| `domain` | 是（当前插件） | `copilot.tencent.com`、`workbuddy.cn`/`codebuddy.cn`（国内）或 `workbuddy.ai`/`codebuddy.ai`（国际）；缺省时回退到 `auth_raw.auth.domain` |
 | `expiresAt` | 否 | epoch 毫秒；导出会保留毫秒精度 |
 | `refreshExpiresAt` | 否 | epoch 毫秒 |
 | `auth_raw` | 否 | 兼容参考实现的原始身份块，导入时只用于恢复企业身份等辅助字段 |
@@ -164,13 +152,15 @@ volumes:
 
 Linux amd64 容器对应的宿主文件为 `./plugins/linux/amd64/cpa-workbuddy.so`。在 CPA 配置中填写 `dir: "/CLIProxyAPI/plugins"`，并启用上述两个开关；保留 CPA 的配置和凭证目录持久卷。
 
+插件配置与用量文件默认写在容器内 CPA 工作目录的 `data/cpa-workbuddy/` 下；需要跨容器重建保留时，将该目录挂载到持久卷，或用 `CPA_WORKBUDDY_CONFIG_PATH` / `CPA_WORKBUDDY_USAGE_PATH` 指向已挂载路径。
+
 容器内运行 CPA，浏览器登录在你自己的电脑上完成。选择与容器架构匹配的 Linux 包；Linux 发布包使用 glibc，Alpine / musl 环境需使用匹配环境构建的产物。
 
 ## 常见问题
 
 **插件未加载？** 检查动态库的平台、架构、文件名和目录，确认 `plugins.enabled` 与 `plugins.configs.cpa-workbuddy.enabled` 均为 `true`，再查看 CPA 启动日志。Windows 如提示缺少 DLL，检查构建工具链所需的运行库。
 
-**插件商店里看不到 `cpa-workbuddy`？** 确认 `plugins.store-sources` 已写入上述注册表地址并重启过 CPA，且 CPA 能访问注册表和 GitHub API。来源错误会显示在插件商店页面的来源列表中。若能看到插件但安装下载失败，检查代理是否允许 GitHub Release 资产及其重定向地址，或改用手动安装。
+**插件商店里看不到 `cpa-workbuddy`？** 确认 CPA 已更新到最新版本并重启，且能访问 GitHub API。若能看到插件但安装下载失败，检查代理是否允许 GitHub Release 资产及其重定向地址，或改用手动安装。
 
 **看不到登录入口？** 确认插件已启用，更新官方 CPA 和管理页面后刷新。
 
@@ -188,7 +178,7 @@ go run ./cmd/project quality
 go run ./cmd/project build
 ```
 
-动态库位于 `out/bin/`；`go run ./cmd/project package` 生成当前平台 ZIP 和 SHA256。开发约定与发布流程见 [开发指南](docs/development.md)，版本变更见 [Release notes](.github/release-notes/v0.1.2.md)。
+动态库位于 `out/bin/`；`go run ./cmd/project package` 生成当前平台 ZIP 和 SHA256。开发约定与发布流程见 [开发指南](docs/development.md)，版本变更见 [Release notes](.github/release-notes/v0.1.4.md)。
 
 ## 许可证
 

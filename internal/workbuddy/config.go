@@ -2,9 +2,14 @@ package workbuddy
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"testing"
 
 	"gopkg.in/yaml.v3"
 )
@@ -13,6 +18,7 @@ const (
 	DefaultAutoCheckinTime = "09:00"
 	AutoCheckinJitter      = 3 * 3600 // +/- 3 hours in seconds
 )
+const ConfigPathEnv = "CPA_WORKBUDDY_CONFIG_PATH"
 
 // PluginConfig holds plugin-level runtime settings configured under
 // plugins.configs.cpa-workbuddy or the embedded control panel.
@@ -105,25 +111,149 @@ func (s *Service) Config() PluginConfig {
 	return s.cfg
 }
 
+// DefaultConfigPath returns the standalone JSON config file path.
+func DefaultConfigPath() string {
+	if override := strings.TrimSpace(os.Getenv(ConfigPathEnv)); override != "" {
+		return override
+	}
+	if testing.Testing() {
+		return ""
+	}
+	return filepath.Join("data", "cpa-workbuddy", "config.json")
+}
+
+// ConfigPath returns the active standalone JSON config file path.
+func (s *Service) ConfigPath() string {
+	s.cfgMu.RLock()
+	defer s.cfgMu.RUnlock()
+	return s.configPath
+}
+
+// SetConfigPath updates the standalone JSON config file path and loads it if present.
+func (s *Service) SetConfigPath(path string) error {
+	trimmed := strings.TrimSpace(path)
+	s.cfgMu.Lock()
+	s.configPath = trimmed
+	s.cfgMu.Unlock()
+	if trimmed == "" {
+		return nil
+	}
+	loaded, ok, err := loadConfigFromFile(trimmed)
+	if err != nil {
+		return err
+	}
+	if ok {
+		s.cfgMu.Lock()
+		s.cfg = loaded
+		s.cfgMu.Unlock()
+		s.wakeScheduler()
+	}
+	return nil
+}
+
 // Reconfigure parses plugin YAML from CPA and updates active settings.
+// If a standalone JSON config file exists, its values take precedence.
 func (s *Service) Reconfigure(configYAML []byte) error {
 	cfg, err := ParseConfigYAML(configYAML)
 	if err != nil {
 		return err
 	}
-	return s.UpdateConfig(cfg)
-}
-
-// UpdateConfig validates and applies new plugin configuration and wakes the scheduler.
-func (s *Service) UpdateConfig(cfg PluginConfig) error {
 	normalized, err := normalizeConfig(cfg)
 	if err != nil {
 		return err
+	}
+	path := s.ConfigPath()
+	if path != "" {
+		if loaded, ok, loadErr := loadConfigFromFile(path); loadErr != nil {
+			return loadErr
+		} else if ok {
+			normalized = loaded
+		}
 	}
 	s.cfgMu.Lock()
 	s.cfg = normalized
 	s.cfgMu.Unlock()
 	s.wakeScheduler()
+	return nil
+}
+
+// UpdateConfig validates, persists to the standalone JSON config file,
+// applies new plugin configuration, and wakes the scheduler.
+func (s *Service) UpdateConfig(cfg PluginConfig) error {
+	normalized, err := normalizeConfig(cfg)
+	if err != nil {
+		return err
+	}
+	path := s.ConfigPath()
+	if path != "" {
+		if err := saveConfigToFile(path, normalized); err != nil {
+			return err
+		}
+	}
+	s.cfgMu.Lock()
+	s.cfg = normalized
+	s.cfgMu.Unlock()
+	s.wakeScheduler()
+	return nil
+}
+
+func loadConfigFromFile(path string) (PluginConfig, bool, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return PluginConfig{}, false, nil
+		}
+		return PluginConfig{}, false, err
+	}
+	cfg := DefaultPluginConfig()
+	if len(bytes.TrimSpace(raw)) > 0 {
+		if err := json.Unmarshal(raw, &cfg); err != nil {
+			return PluginConfig{}, false, err
+		}
+	}
+	normalized, err := normalizeConfig(cfg)
+	if err != nil {
+		return PluginConfig{}, false, err
+	}
+	return normalized, true, nil
+}
+
+func saveConfigToFile(path string, cfg PluginConfig) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return err
+	}
+	data = append(data, '\n')
+	tmp, err := os.CreateTemp(dir, ".config-*.json.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	cleanup := true
+	defer func() {
+		if cleanup {
+			_ = os.Remove(tmpName)
+		}
+	}()
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Chmod(0o600); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		return err
+	}
+	cleanup = false
 	return nil
 }
 

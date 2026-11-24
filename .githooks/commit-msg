@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+
+repository_root=$(git rev-parse --show-toplevel)
+cd "$repository_root"
+exec go run ./cmd/project commit-msg --message-file "$1"

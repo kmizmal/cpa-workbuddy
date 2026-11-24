@@ -50,7 +50,7 @@ func runControllerTests(m *testing.M) (status int) {
 		return 1
 	}
 	defer func() {
-		if err := os.RemoveAll(stage); err != nil {
+		if err := removeFixtureAll(stage); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			status = 1
 		}
@@ -154,6 +154,19 @@ type commandResult struct {
 	code   int
 }
 
+// removeFixtureAll deletes a temporary tree, retrying the transient sharing
+// violation Windows reports while an exited process releases its cwd handle.
+func removeFixtureAll(path string) error {
+	var err error
+	for range 10 {
+		if err = os.RemoveAll(path); err == nil {
+			return nil
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	return err
+}
+
 func newFixture(t *testing.T) fixture {
 	t.Helper()
 	root, err := os.MkdirTemp(filepath.Join(repositoryRoot, "out", "tmp"), "project-test-")
@@ -161,7 +174,7 @@ func newFixture(t *testing.T) fixture {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		if err := os.RemoveAll(root); err != nil {
+		if err := removeFixtureAll(root); err != nil {
 			t.Error(err)
 		}
 	})

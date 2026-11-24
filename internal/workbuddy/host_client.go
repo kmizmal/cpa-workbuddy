@@ -181,7 +181,11 @@ func hostAuthSaveNewCredential(call func(string, []byte) ([]byte, error), auth A
 		} `json:"error"`
 	}
 	if err := json.Unmarshal(reply, &envelope); err != nil || !envelope.OK {
-		return failure("host_save_failed", "host failed to save imported credential", 502)
+		msg := "host failed to save imported credential"
+		if envelope.Error != nil && strings.TrimSpace(envelope.Error.Message) != "" {
+			msg = envelope.Error.Message
+		}
+		return failure("host_save_failed", msg, 502)
 	}
 	return nil
 }

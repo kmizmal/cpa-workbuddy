@@ -17,15 +17,24 @@ import (
 // responseStreamHost scripts the actual host callback boundary. Each read can
 // end the stream while still returning bytes, as permitted by the host API.
 type responseStreamHost struct {
-	mu             sync.Mutex
-	chunks         [][]byte
-	next           int
-	emitted        [][]byte
-	streamError    string
-	upstreamClosed int
-	callbackError  error
-	closed         chan struct{}
-	closeOnce      sync.Once
+	mu               sync.Mutex
+	chunks           [][]byte
+	next             int
+	emitted          [][]byte
+	streamError      string
+	upstreamClosed   int
+	downstreamClosed bool
+	callbackError    error
+	closed           chan struct{}
+	closeOnce        sync.Once
+}
+
+// finish closes the completion signal once both lease ends are closed, so
+// callers wait for the full stream teardown.
+func (h *responseStreamHost) finish() {
+	if h.upstreamClosed > 0 && h.downstreamClosed {
+		h.closeOnce.Do(func() { close(h.closed) })
+	}
 }
 
 func (h *responseStreamHost) call(method string, raw []byte) ([]byte, error) {
@@ -58,6 +67,7 @@ func (h *responseStreamHost) call(method string, raw []byte) ([]byte, error) {
 			return nil, errors.New("wrong upstream close ID")
 		}
 		h.upstreamClosed++
+		h.finish()
 	case "host.stream.emit":
 		if request.StreamID != "response-downstream" {
 			return nil, errors.New("wrong downstream stream ID")
@@ -73,7 +83,8 @@ func (h *responseStreamHost) call(method string, raw []byte) ([]byte, error) {
 		if request.Error != "" {
 			h.streamError = request.Error
 		}
-		h.closeOnce.Do(func() { close(h.closed) })
+		h.downstreamClosed = true
+		h.finish()
 	case "host.log":
 	default:
 		h.callbackError = fmt.Errorf("unexpected callback method %s", method)

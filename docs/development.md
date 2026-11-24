@@ -12,7 +12,7 @@ go run ./cmd/project test
 go run ./cmd/project package
 ```
 
-- `bootstrap`：安装固定版本的 gopls、golangci-lint，准备经过 SHA256 校验的打包许可素材。首次执行需要网络。
+- `bootstrap`：安装固定版本的 gopls、golangci-lint，配置仓库的 `.githooks/commit-msg` 强制校验提交信息，并准备经过 SHA256 校验的打包许可素材。首次执行需要网络。
 - `quality`：依次执行 tools、version、format、modules、vet、lsp、lint、build、test。检查不修改源码；warning、info、hint 同样阻断。未指定 `--message-file`、`--commit-range` 或 `--github-event` 时，还会校验当前分支相对上游尚未推送的提交信息。
 - `build`：为当前系统和架构构建 CGO 动态库及生成头，输出到 `out/bin/`。
 - `test`：构建动态库并运行 Go 行为测试、工程命令测试及实际 C ABI 加载测试。
@@ -46,6 +46,8 @@ CPA Manager 负责凭证保存、安装、刷新及一次 401 恢复；插件同
 ## 测试与提交
 
 优先运行覆盖改动的最窄检查，完成前运行一次完整 `quality`。CLI LSP 检查包含全部自有 Go 源码；新增测试关注消费者可见行为。验证使用命令行或隔离 headless，浏览器真实登录由用户操作。
+
+首次执行 `go run ./cmd/project bootstrap` 会将仓库的 Git hooks 路径配置为 `.githooks`。之后每次 `git commit` 都会自动运行 `.githooks/commit-msg`；不符合提交格式时提交会被拒绝。CI 仍会在远端再次检查整个 PR 的提交历史。
 
 ```sh
 go run ./cmd/project quality

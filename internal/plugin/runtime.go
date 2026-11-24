@@ -24,11 +24,14 @@ const (
 	Name              = "cpa-workbuddy"
 	StatusPath        = "/v0/management/plugins/" + Name + "/status"
 	DashboardPath     = "/v0/management/plugins/" + Name + "/dashboard"
+	UsagePath         = "/v0/management/plugins/" + Name + "/usage"
+	UsageResetPath    = "/v0/management/plugins/" + Name + "/usage/reset"
 	CreditsPath       = "/v0/management/plugins/" + Name + "/credits"
 	CheckinPath       = "/v0/management/plugins/" + Name + "/checkin"
 	DailyBonusPath    = "/v0/management/plugins/" + Name + "/daily-bonus"
 	SettingsPath      = "/v0/management/plugins/" + Name + "/settings"
 	ModelsPath        = "/v0/management/plugins/" + Name + "/models"
+	TransferBasePath  = "/v0/management/plugins/" + Name + "/transfer"
 	PanelResourcePath = "/panel"
 	MaxRPCPayload     = 64 << 20
 )
@@ -231,12 +234,17 @@ func (r *Runtime) Handle(method string, raw []byte) []byte {
 				Routes: []managementRoute{
 					{Method: "GET", Path: StatusPath},
 					{Method: "GET", Path: DashboardPath},
+					{Method: "GET", Path: UsagePath},
+					{Method: "POST", Path: UsageResetPath},
 					{Method: "POST", Path: CreditsPath},
 					{Method: "POST", Path: CheckinPath},
 					{Method: "POST", Path: DailyBonusPath},
 					{Method: "GET", Path: SettingsPath},
 					{Method: "PUT", Path: SettingsPath},
 					{Method: "GET", Path: ModelsPath},
+					{Method: "POST", Path: TransferBasePath + "/preview"},
+					{Method: "POST", Path: TransferBasePath + "/export"},
+					{Method: "POST", Path: TransferBasePath + "/import"},
 				},
 				Resources: []resourceRoute{
 					{

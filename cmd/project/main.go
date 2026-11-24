@@ -987,7 +987,15 @@ func (c *controller) bootstrap() error {
 	if err := c.checkTools(); err != nil {
 		return err
 	}
+	if err := c.installGitHooks(); err != nil {
+		return err
+	}
 	return c.prepareLicenseSources()
+}
+
+func (c *controller) installGitHooks() error {
+	_, err := c.execute([]string{"git", "config", "--local", "core.hooksPath", ".githooks"}, runPolicy{})
+	return err
 }
 
 func (c *controller) quality(selected []string, tag string) error {

@@ -446,6 +446,127 @@
       opacity: 0.55;
       cursor: not-allowed !important;
     }
+    @keyframes wb-spin {
+      to { transform: rotate(360deg); }
+    }
+    .btn-spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: wb-spin 0.65s linear infinite;
+      flex-shrink: 0;
+    }
+    .credentials-wrapper {
+      position: relative;
+    }
+    .credentials-loading-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+    }
+    .credentials-loading-overlay[hidden] {
+      display: none;
+    }
+    .credentials-loading-card {
+      position: relative;
+      z-index: 3;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 20px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow-lg);
+      max-width: 380px;
+      width: calc(100% - 32px);
+      text-align: center;
+      animation: cardScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes cardScaleIn {
+      from { transform: scale(0.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .quota-probe-radar {
+      position: relative;
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--accent-blue-subtle);
+    }
+    .radar-ping {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid var(--accent-blue);
+      animation: radarPing 1.8s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    @keyframes radarPing {
+      0% { transform: scale(0.65); opacity: 0.85; }
+      100% { transform: scale(1.65); opacity: 0; }
+    }
+    .radar-beacon {
+      font-size: 24px;
+      animation: beaconPulse 1.6s ease-in-out infinite;
+      line-height: 1;
+      user-select: none;
+    }
+    @keyframes beaconPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+    .quota-loading-text {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .quota-loading-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+    .quota-loading-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+    .quota-loading-bar {
+      width: 100%;
+      height: 4px;
+      background: var(--meter-bg);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .quota-loading-bar-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 35%;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+      border-radius: 999px;
+      animation: indeterminateBar 1.4s ease-in-out infinite;
+    }
+    @keyframes indeterminateBar {
+      0% { left: -35%; width: 30%; }
+      50% { width: 50%; }
+      100% { left: 100%; width: 30%; }
+    }
 
     input[type="password"], input[type="text"] {
       min-height: 34px;
@@ -650,6 +771,102 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .wb-checkbox {
+      appearance: none;
+      -webkit-appearance: none;
+      flex: 0 0 auto;
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      border: 1.5px solid var(--border-color);
+      border-radius: 5px;
+      background: var(--bg-primary);
+      cursor: pointer;
+      display: inline-grid;
+      place-content: center;
+      transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .wb-checkbox:hover:not(:disabled) {
+      border-color: var(--accent-blue);
+    }
+    .wb-checkbox:checked {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+    }
+    .wb-checkbox:checked::after {
+      content: "";
+      width: 9px;
+      height: 5px;
+      border-left: 2px solid #fff;
+      border-bottom: 2px solid #fff;
+      transform: rotate(-45deg) translate(0.5px, -0.5px);
+    }
+    .wb-checkbox:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px var(--border-focus);
+    }
+    .wb-checkbox:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .transfer-select-hit {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      margin: -8px -2px -8px -8px;
+      border-radius: 8px;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+    .transfer-select-hit:hover .wb-checkbox:not(:disabled) {
+      border-color: var(--accent-blue);
+    }
+    .transfer-preview-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      max-height: 46vh;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-primary);
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-color) transparent;
+    }
+    .transfer-preview-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-subtle, var(--border-color));
+      font-size: 12.5px;
+      cursor: pointer;
+    }
+    .transfer-preview-row:last-child {
+      border-bottom: 0;
+    }
+    .transfer-preview-row:hover {
+      background: var(--bg-hover, var(--bg-subtle));
+    }
+    .transfer-preview-row.unimportable {
+      cursor: not-allowed;
+      opacity: 0.62;
+    }
+    .transfer-preview-name {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text-primary);
+    }
+    .transfer-preview-problem {
+      flex: 0 0 auto;
+      font-size: 11.5px;
+      color: var(--text-muted);
     }
 
     .cred-badge-row {
@@ -999,6 +1216,13 @@
     }
     .modal.modal-wide {
       width: min(760px, 100%);
+      height: min(720px, 85vh);
+      max-height: 85vh;
+      transition: height 0.2s ease, transform 0.2s ease;
+    }
+    .modal.modal-transfer {
+      width: min(680px, 100%);
+      height: auto;
       max-height: 85vh;
     }
     .models-toolbar {
@@ -1042,14 +1266,22 @@
     }
     .models-list {
       flex: 1;
-      min-height: 140px;
-      max-height: 55vh;
+      min-height: 0;
       overflow-y: auto;
       border: 1px solid var(--border-color);
       border-radius: 10px;
       background: var(--bg-primary);
       scrollbar-width: thin;
       scrollbar-color: var(--border-color) transparent;
+    }
+    .models-loading-state {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 13px;
     }
     .model-row {
       display: flex;
@@ -1205,6 +1437,100 @@
       .topbar { gap: 10px; }
       .topbar-actions { width: 100%; justify-content: flex-end; }
     }
+    #panelUsage:not([hidden]) {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding-right: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-color) transparent;
+    }
+    #panelUsage::-webkit-scrollbar,
+    .usage-table-wrap::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    #panelUsage::-webkit-scrollbar-track,
+    .usage-table-wrap::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    #panelUsage::-webkit-scrollbar-thumb,
+    .usage-table-wrap::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 999px;
+    }
+    #panelUsage::-webkit-scrollbar-thumb:hover,
+    .usage-table-wrap::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+    .usage-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .usage-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .usage-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .usage-section-title {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .usage-table-wrap {
+      overflow-x: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-color) transparent;
+    }
+    .usage-table-wrap.usage-events-scroll {
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .usage-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+    .usage-table th,
+    .usage-table td {
+      text-align: left;
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      white-space: nowrap;
+    }
+    .usage-table th {
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 11px;
+      background: var(--bg-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .usage-table td.num,
+    .usage-table th.num {
+      text-align: right;
+    }
+    .usage-empty {
+      padding: 16px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -1233,6 +1559,7 @@
 
     <nav class="tabs" aria-label="控制台导航">
       <button type="button" class="tab active" data-tab="overview" onclick="switchTab('overview')">概览与凭证</button>
+      <button type="button" class="tab" data-tab="usage" onclick="switchTab('usage')">📊 用量与积分统计</button>
       <button type="button" class="tab" data-tab="config" onclick="switchTab('config')">⚙️ 模型与调度配置</button>
     </nav>
 
@@ -1288,19 +1615,24 @@
           </div>
         </div>
 
-        <button type="button" id="btnRefreshAll" class="btn-secondary" onclick="refreshAllAccounts()">
+        <button type="button" id="btnRefreshAll" class="btn-secondary" onclick="refreshAllAccounts()" disabled>
           <span>🔄 刷新配额</span>
         </button>
-        <button type="button" id="btnCheckinAll" class="btn-primary" onclick="runBatch('/checkin', 'btnCheckinAll', '国内一键签到')">
+        <button type="button" id="btnCheckinAll" class="btn-primary" onclick="runBatch('/checkin', 'btnCheckinAll', '国内一键签到')" disabled>
           <span>✨ 国内一键签到</span>
         </button>
-        <button type="button" id="btnBonusAll" class="btn-secondary" onclick="runBatch('/daily-bonus', 'btnBonusAll', '国际一键点亮')">
+        <button type="button" id="btnBonusAll" class="btn-secondary" onclick="runBatch('/daily-bonus', 'btnBonusAll', '国际一键点亮')" disabled>
           <span>⚡ 国际一键点亮</span>
+        </button>
+        <button type="button" id="btnTransferSelectAll" class="btn-secondary" onclick="toggleDashboardTransferSelectAll()" disabled>
+          <span>☑️ 全选</span>
         </button>
         <button type="button" id="btnTransferExport" class="btn-secondary" onclick="exportSelectedAccounts()">
           <span>⬇️ 导出选中账号</span>
         </button>
-        <label class="btn-secondary" for="transferImportFile">⬆️ 导入账号</label>
+        <button type="button" id="btnTransferImport" class="btn-secondary" onclick="el('transferImportFile').click()">
+          <span>⬆️ 导入账号</span>
+        </button>
         <input id="transferImportFile" type="file" accept="application/json,.json" hidden onchange="importAccountsFromFile(event)">
 
         <div class="control-spacer"></div>
@@ -1311,9 +1643,81 @@
       </div>
 
       <div class="credentials-wrapper">
+        <div id="credentialsLoadingOverlay" class="credentials-loading-overlay" hidden aria-live="polite">
+          <div class="credentials-loading-card">
+            <div class="quota-probe-radar">
+              <div class="radar-ping"></div>
+              <div class="radar-beacon">📡</div>
+            </div>
+            <div class="quota-loading-text">
+              <div class="quota-loading-title">正在刷新全局配额...</div>
+              <div class="quota-loading-desc">正在向 WorkBuddy 服务探测最新配额与今日状态</div>
+            </div>
+            <div class="quota-loading-bar">
+              <div class="quota-loading-bar-fill"></div>
+            </div>
+          </div>
+        </div>
         <div id="credentialsContainer" class="credentials-grid scroll-container">
           <div class="empty-state">加载中...</div>
         </div>
+      </div>
+    </section>
+
+    <section id="panelUsage" hidden>
+      <div class="summary-grid">
+        <div class="kpi-card">
+          <p class="kpi-title">总积分使用</p>
+          <div id="usageValCredits" class="kpi-value">--</div>
+          <div id="usageValCreditsDesc" class="kpi-desc">已用 -- / 总计 --</div>
+        </div>
+        <div class="kpi-card">
+          <p class="kpi-title">即将过期积分</p>
+          <div id="usageValExpiring" class="kpi-value">--</div>
+          <div id="usageValExpiringDesc" class="kpi-desc">活跃凭证 --</div>
+        </div>
+        <div class="kpi-card">
+          <p class="kpi-title">累计请求 / 成功率</p>
+          <div id="usageValRequests" class="kpi-value">--</div>
+          <div id="usageValRequestsDesc" class="kpi-desc">活跃模型 --</div>
+        </div>
+        <div class="kpi-card">
+          <p class="kpi-title">Token 消耗总量</p>
+          <div id="usageValTokens" class="kpi-value">--</div>
+          <div id="usageValTokensDesc" class="kpi-desc">输入 -- · 输出 --</div>
+        </div>
+      </div>
+
+      <div class="usage-toolbar">
+        <button type="button" id="btnRefreshUsage" class="btn-secondary" onclick="loadUsageStats(true)">
+          <span>🔄 刷新统计</span>
+        </button>
+        <button type="button" id="btnResetUsage" class="btn-secondary" onclick="resetUsageStats()">
+          <span>🧹 重置运行统计</span>
+        </button>
+        <div class="control-spacer"></div>
+        <span id="usageGeneratedAt" class="kpi-desc"></span>
+      </div>
+
+      <div class="usage-section">
+        <div class="usage-section-header">
+          <h3 class="usage-section-title">模型用量与积分统计</h3>
+        </div>
+        <div id="usageModelsWrap" class="usage-table-wrap"></div>
+      </div>
+
+      <div class="usage-section">
+        <div class="usage-section-header">
+          <h3 class="usage-section-title">账号积分与调用分布</h3>
+        </div>
+        <div id="usageAccountsWrap" class="usage-table-wrap"></div>
+      </div>
+
+      <div class="usage-section">
+        <div class="usage-section-header">
+          <h3 class="usage-section-title">最近请求记录</h3>
+        </div>
+        <div id="usageEventsWrap" class="usage-table-wrap usage-events-scroll"></div>
       </div>
     </section>
 
@@ -1447,6 +1851,40 @@
     </div>
   </div>
 
+  <div id="transferModal" class="modal-backdrop" hidden onclick="if (event.target === this) closeTransferModal()">
+    <div class="modal modal-transfer" role="dialog" aria-modal="true" aria-labelledby="transferModalTitle">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px; min-width:0; flex-wrap:wrap;">
+          <h2 id="transferModalTitle" class="modal-title">导入账号预览</h2>
+          <span id="transferSourceBadge" class="badge badge-subtle"></span>
+        </div>
+        <button type="button" class="btn-secondary" onclick="closeTransferModal()" style="min-height:28px; padding:2px 8px;">✕</button>
+      </div>
+      <p style="font-size:12.5px; color:var(--text-secondary); margin:0; line-height:1.5;">
+        预览只显示脱敏账号信息，访问令牌不会出现在这里。勾选要导入的记录后确认。
+      </p>
+      <div class="models-toolbar">
+        <span class="badge badge-subtle">共 <span id="transferPreviewTotal">0</span> 条</span>
+        <span class="badge badge-success">可导入 <span id="transferPreviewImportable">0</span> 条</span>
+        <label class="badge badge-subtle" style="cursor:pointer; gap:6px;">
+          <input type="checkbox" id="transferSelectAll" class="wb-checkbox" onchange="toggleTransferSelectAll(this.checked)">
+          <span>全选可导入</span>
+        </label>
+      </div>
+      <div id="transferPreviewList" class="transfer-preview-list">
+        <div class="empty-state" style="border:0; background:transparent;">加载中...</div>
+      </div>
+      <div id="transferModalError" class="modal-error" hidden></div>
+      <div class="models-footer">
+        <span id="transferPreviewSummary">--</span>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="btn-secondary" onclick="closeTransferModal()">取消</button>
+          <button type="button" id="btnTransferConfirm" class="btn-primary" onclick="confirmTransferImport()">确认导入</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const MGMT_BASE = "/v0/management/plugins/cpa-workbuddy";
     const LOCAL_KEY_STORAGE = "cpa_workbuddy_mgmt_key";
@@ -1472,6 +1910,108 @@
 
     let currentModelsData = null;
     const busyKeys = new Set();
+    let dashboardLoading = false;
+    let activeBatchOp = null;
+    let activeTransferOp = null;
+    let lastToolbarCounts = { cnCount: 0, cnPending: 0, intlCount: 0, intlPending: 0 };
+
+    function setButtonLoading(btn, isLoading, loadingText, idleText) {
+      if (!btn) return;
+      btn.textContent = "";
+      if (isLoading) {
+        const sp = document.createElement("span");
+        sp.className = "btn-spinner";
+        btn.appendChild(sp);
+      }
+      const label = document.createElement("span");
+      label.textContent = isLoading ? loadingText : idleText;
+      btn.appendChild(label);
+    }
+
+    function accountActionsLocked() {
+      return dashboardLoading || activeBatchOp !== null || activeTransferOp !== null;
+    }
+
+    function toolbarBusy() {
+      return accountActionsLocked() || busyKeys.size > 0;
+    }
+
+    function updateTransferControls() {
+      const hasData = Boolean(dashboardData && Array.isArray(dashboardData.accounts));
+      const busy = toolbarBusy();
+      const total = document.querySelectorAll(".transfer-select").length;
+      const selected = document.querySelectorAll(".transfer-select:checked").length;
+      const selectAllBtn = el("btnTransferSelectAll");
+      if (selectAllBtn) {
+        selectAllBtn.disabled = busy || !hasData || total === 0;
+        const label = selectAllBtn.querySelector("span");
+        if (label) label.textContent = (total > 0 && selected === total) ? "☑️ 取消全选" : "☑️ 全选";
+      }
+      const exportBtn = el("btnTransferExport");
+      if (exportBtn) exportBtn.disabled = busy || !hasData || selected === 0;
+      const importBtn = el("btnTransferImport");
+      if (importBtn) importBtn.disabled = busy;
+      const importInput = el("transferImportFile");
+      if (importInput) importInput.disabled = busy;
+      updateTransferConfirmState();
+    }
+
+    function toggleDashboardTransferSelectAll() {
+      if (toolbarBusy()) return;
+      const checkboxes = Array.from(document.querySelectorAll(".transfer-select"));
+      if (checkboxes.length === 0) return;
+      const allSelected = checkboxes.every(input => input.checked);
+      checkboxes.forEach(input => {
+        input.checked = !allSelected;
+      });
+      updateTransferControls();
+    }
+
+    function refreshToolbarButtons() {
+      updateToolbarButtons(lastToolbarCounts.cnCount, lastToolbarCounts.cnPending,
+        lastToolbarCounts.intlCount, lastToolbarCounts.intlPending);
+    }
+
+    function updateToolbarButtons(cnCount = 0, cnPending = 0, intlCount = 0, intlPending = 0) {
+      const hasData = Boolean(dashboardData && Array.isArray(dashboardData.accounts));
+      const busy = toolbarBusy();
+
+      const overlay = el("credentialsLoadingOverlay");
+      if (overlay) {
+        overlay.hidden = !(dashboardLoading || activeBatchOp === "refresh");
+      }
+
+      const refreshBtn = el("btnRefreshAll");
+      if (refreshBtn) {
+        refreshBtn.disabled = busy || !getManagementKey();
+        setButtonLoading(refreshBtn, activeBatchOp === "refresh" || dashboardLoading, "刷新中...", "🔄 刷新配额");
+      }
+
+      const checkinBatchBtn = el("btnCheckinAll");
+      if (checkinBatchBtn) {
+        const noCnWork = !hasData || cnCount === 0 || cnPending === 0;
+        checkinBatchBtn.disabled = busy || noCnWork;
+        setButtonLoading(checkinBatchBtn, activeBatchOp === "checkin", "签到中...", "✨ 国内一键签到");
+        checkinBatchBtn.title = !hasData
+          ? "等待数据加载"
+          : (cnCount === 0 ? "暂无国内账号" : (cnPending === 0 ? "全部国内账号今日已签到" : "执行国内一键签到"));
+      }
+
+      const bonusBatchBtn = el("btnBonusAll");
+      if (bonusBatchBtn) {
+        const noIntlWork = !hasData || intlCount === 0 || intlPending === 0;
+        bonusBatchBtn.disabled = busy || noIntlWork;
+        setButtonLoading(bonusBatchBtn, activeBatchOp === "daily-bonus", "点亮中...", "⚡ 国际一键点亮");
+        bonusBatchBtn.title = !hasData
+          ? "等待数据加载"
+          : (intlCount === 0 ? "暂无国际账号" : (intlPending === 0 ? "全部国际账号今日已点亮" : "执行国际一键点亮"));
+      }
+
+      document.querySelectorAll(".account-action-ready").forEach(button => {
+        button.disabled = accountActionsLocked();
+      });
+      updateTransferControls();
+    }
 
     function el(id) { return document.getElementById(id); }
 
@@ -1751,6 +2291,7 @@
     }
 
     async function submitManualKey() {
+      if (toolbarBusy()) return;
       const input = el("manualKeyInput");
       const key = input ? input.value.trim() : "";
       const errNode = el("keyModalError");
@@ -1762,13 +2303,15 @@
       const btn = el("btnSaveKey");
       btn.disabled = true;
       errNode.hidden = true;
+      dashboardLoading = true;
+      refreshToolbarButtons();
       try {
         saveManualKey(key, el("rememberKeyToggle").checked);
         const data = await loadDashboard(false);
         closeKeyModal();
         showToast("管理密钥验证成功", "success");
         if (data && data.accounts && data.accounts.some(a => !a.quota && !a.disabled)) {
-          loadDashboard(true).catch(() => {});
+          await loadDashboard(true).catch(() => {});
         }
       } catch (err) {
         clearSavedManualKey();
@@ -1776,6 +2319,8 @@
         errNode.hidden = false;
       } finally {
         btn.disabled = false;
+        dashboardLoading = false;
+        refreshToolbarButtons();
       }
     }
 
@@ -1851,7 +2396,184 @@
     function switchTab(tabId) {
       document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tabId));
       el("panelOverview").hidden = tabId !== "overview";
+      el("panelUsage").hidden = tabId !== "usage";
       el("panelConfig").hidden = tabId !== "config";
+      if (tabId === "usage") {
+        loadUsageStats(false);
+      }
+    }
+    function formatTokens(n) {
+      const v = Number(n || 0);
+      if (v >= 1000000) return (v / 1000000).toFixed(2) + "M";
+      if (v >= 1000) return (v / 1000).toFixed(1) + "K";
+      return String(v);
+    }
+
+    async function loadUsageStats(refresh) {
+      const btn = el("btnRefreshUsage");
+      if (btn) btn.disabled = true;
+      try {
+        const suffix = refresh ? "?refresh=1" : "";
+        const data = await apiFetch(MGMT_BASE + "/usage" + suffix);
+        renderUsageStats(data);
+      } catch (err) {
+        if (el("usageGeneratedAt")) {
+          el("usageGeneratedAt").textContent = "加载失败: " + (err && err.message ? err.message : String(err));
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function resetUsageStats() {
+      const btn = el("btnResetUsage");
+      if (btn) btn.disabled = true;
+      try {
+        await apiFetch(MGMT_BASE + "/usage/reset", { method: "POST", body: "{}" });
+        await loadUsageStats(false);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    function renderUsageStats(data) {
+      if (!data) return;
+      const ov = data.overview || {};
+      el("usageValCredits").textContent = formatCredits(ov.remaining_credits || 0);
+      el("usageValCreditsDesc").textContent =
+        "已用 " + formatCredits(ov.used_credits || 0) + " / 总计 " + formatCredits(ov.total_credits || 0) +
+        " (" + Number(ov.usage_percent || 0).toFixed(1) + "%)";
+      el("usageValExpiring").textContent = formatCredits(ov.expiring_credits || 0);
+      el("usageValExpiringDesc").textContent = "活跃凭证 " + (ov.active_accounts || 0) + " / " + (ov.total_accounts || 0);
+      const totalReq = Number(ov.total_requests || 0);
+      const okReq = Number(ov.success_requests || 0);
+      const rate = totalReq > 0 ? ((okReq / totalReq) * 100).toFixed(1) + "%" : "--";
+      el("usageValRequests").textContent = totalReq + " (" + rate + ")";
+      el("usageValRequestsDesc").textContent = "活跃模型 " + (ov.active_models || 0) + " 个";
+      el("usageValTokens").textContent = formatTokens(ov.total_tokens || 0);
+      el("usageValTokensDesc").textContent =
+        "输入 " + formatTokens(ov.total_input_tokens || 0) + " · 输出 " + formatTokens(ov.total_output_tokens || 0);
+      if (data.generated_at) {
+        el("usageGeneratedAt").textContent = "统计时间: " + new Date(data.generated_at).toLocaleString();
+      }
+
+      const accWrap = el("usageAccountsWrap");
+      const accounts = data.accounts || [];
+      if (accounts.length === 0) {
+        accWrap.innerHTML = '<div class="usage-empty">暂无账号数据</div>';
+      } else {
+        const tbl = document.createElement("table");
+        tbl.className = "usage-table";
+        tbl.innerHTML =
+          "<thead><tr>" +
+          "<th>账号</th><th>站点</th><th>套餐</th>" +
+          "<th class='num'>已用积分</th><th class='num'>剩余积分</th><th class='num'>总积分</th>" +
+          "<th class='num'>即将过期</th><th class='num'>请求数</th><th class='num'>Token</th><th>资源包</th>" +
+          "</tr></thead><tbody></tbody>";
+        const tbody = tbl.querySelector("tbody");
+        accounts.forEach(a => {
+          const tr = document.createElement("tr");
+          const q = a.quota || {};
+          const pkgCount = (q.packages || []).length;
+          const cells = [
+            a.label || a.auth_index,
+            a.site === "workbuddy-ai" ? "Global" : "CN",
+            a.plan_name || (a.is_paid ? "Paid" : "Free"),
+            formatCredits(q.used || 0),
+            formatCredits(q.remaining || 0),
+            formatCredits(q.total || 0),
+            formatCredits(q.expiring_amount || 0),
+            String(a.requests || 0),
+            formatTokens(a.total_tokens || 0),
+            pkgCount > 0 ? pkgCount + " 个资源包" : "-"
+          ];
+          cells.forEach((txt, idx) => {
+            const td = document.createElement("td");
+            if (idx >= 3 && idx <= 8) td.className = "num";
+            td.textContent = txt;
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+        accWrap.textContent = "";
+        accWrap.appendChild(tbl);
+      }
+
+      const modWrap = el("usageModelsWrap");
+      const models = data.models || [];
+      if (models.length === 0) {
+        modWrap.innerHTML = '<div class="usage-empty">暂无模型调用记录</div>';
+      } else {
+        const tbl = document.createElement("table");
+        tbl.className = "usage-table";
+        tbl.innerHTML =
+          "<thead><tr>" +
+          "<th>模型</th><th>站点</th><th class='num'>积分倍率</th>" +
+          "<th class='num'>请求数</th><th class='num'>成功/失败</th>" +
+          "<th class='num'>输入 Token</th><th class='num'>输出 Token</th><th class='num'>总 Token</th><th>最近使用</th>" +
+          "</tr></thead><tbody></tbody>";
+        const tbody = tbl.querySelector("tbody");
+        models.forEach(m => {
+          const tr = document.createElement("tr");
+          const cells = [
+            m.display_name || m.model,
+            m.site === "workbuddy-ai" ? "Global" : "CN",
+            m.is_free ? "FREE · x0.00" : (m.credit_factor > 0 ? "x" + Number(m.credit_factor).toFixed(2) : "-"),
+            String(m.requests || 0),
+            (m.success_count || 0) + " / " + (m.error_count || 0),
+            formatTokens(m.input_tokens || 0),
+            formatTokens(m.output_tokens || 0),
+            formatTokens(m.total_tokens || 0),
+            m.last_used_at ? new Date(m.last_used_at).toLocaleTimeString() : "-"
+          ];
+          cells.forEach((txt, idx) => {
+            const td = document.createElement("td");
+            if (idx >= 2 && idx <= 7) td.className = "num";
+            td.textContent = txt;
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+        modWrap.textContent = "";
+        modWrap.appendChild(tbl);
+      }
+
+      const evWrap = el("usageEventsWrap");
+      const events = data.recent_events || [];
+      if (events.length === 0) {
+        evWrap.innerHTML = '<div class="usage-empty">暂无最近请求记录</div>';
+      } else {
+        const tbl = document.createElement("table");
+        tbl.className = "usage-table";
+        tbl.innerHTML =
+          "<thead><tr>" +
+          "<th>时间</th><th>账号</th><th>模型</th><th class='num'>倍率</th>" +
+          "<th class='num'>Token</th><th class='num'>耗时</th><th>状态</th>" +
+          "</tr></thead><tbody></tbody>";
+        const tbody = tbl.querySelector("tbody");
+        events.slice(0, 30).forEach(ev => {
+          const tr = document.createElement("tr");
+          const u = ev.usage || {};
+          const cells = [
+            ev.timestamp ? new Date(ev.timestamp).toLocaleTimeString() : "-",
+            ev.account_label || ev.auth_index || "-",
+            ev.model || "-",
+            ev.is_free ? "FREE · x0.00" : (ev.credit_factor > 0 ? "x" + Number(ev.credit_factor).toFixed(2) : "-"),
+            formatTokens(u.total_tokens || 0),
+            (ev.duration_ms || 0) + " ms",
+            ev.status === "success" ? "成功" : "失败"
+          ];
+          cells.forEach((txt, idx) => {
+            const td = document.createElement("td");
+            if (idx >= 3 && idx <= 5) td.className = "num";
+            td.textContent = txt;
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+        evWrap.textContent = "";
+        evWrap.appendChild(tbl);
+      }
     }
 
     function toggleSiteMenu(event) {
@@ -2032,6 +2754,11 @@
     // ---- Render Dashboard ----
     function renderDashboard() {
       if (!dashboardData) return;
+      const checkedAuthIndexes = new Set(
+        Array.from(document.querySelectorAll(".transfer-select:checked"))
+          .map(input => input.dataset.authIndex)
+          .filter(Boolean)
+      );
       el("pluginVersion").textContent = "v" + (dashboardData.version || "--");
       applyConfigToForm(dashboardData.config, dashboardData.scheduler);
 
@@ -2061,18 +2788,8 @@
         }
       }
 
-      const checkinBatchBtn = el("btnCheckinAll");
-      if (checkinBatchBtn) {
-        const noCnWork = cnCount === 0 || cnPending === 0;
-        checkinBatchBtn.disabled = noCnWork;
-        checkinBatchBtn.title = cnCount === 0 ? "暂无国内账号" : (cnPending === 0 ? "全部国内账号今日已签到" : "执行国内一键签到");
-      }
-      const bonusBatchBtn = el("btnBonusAll");
-      if (bonusBatchBtn) {
-        const noIntlWork = intlCount === 0 || intlPending === 0;
-        bonusBatchBtn.disabled = noIntlWork;
-        bonusBatchBtn.title = intlCount === 0 ? "暂无国际账号" : (intlPending === 0 ? "全部国际账号今日已点亮" : "执行国际一键点亮");
-      }
+      lastToolbarCounts = { cnCount, cnPending, intlCount, intlPending };
+      updateToolbarButtons(cnCount, cnPending, intlCount, intlPending);
 
       el("valTotalCreds").textContent = String(all.length);
       el("valTotalDesc").textContent = `国内 ${cnCount} · 国际 ${intlCount} · 活跃 ${activeCount}`;
@@ -2094,6 +2811,7 @@
           ? "暂无 WorkBuddy 凭证，请先在 CPA 认证管理中完成浏览器登录。"
           : "当前站点筛选下无凭证。";
         container.appendChild(empty);
+        updateTransferControls();
         return;
       }
 
@@ -2103,7 +2821,7 @@
         card.className = "cred-card" + (acc.disabled ? " cred-card-disabled" : "");
         card.title = "点击查看该账号的模型列表与消耗倍率";
         card.onclick = (e) => {
-          if (e.target && e.target.closest("button")) return;
+          if (e.target && e.target.closest("button, label.transfer-select-hit, input")) return;
           openModelsModal(acc);
         };
 
@@ -2112,14 +2830,19 @@
         info.className = "cred-info";
         const nameRow = document.createElement("div");
         nameRow.className = "cred-name";
+        const selectHit = document.createElement("label");
+        selectHit.className = "transfer-select-hit";
+        selectHit.title = "选择此账号用于导出";
+        selectHit.onclick = (e) => e.stopPropagation();
         const selectBox = document.createElement("input");
-         selectBox.type = "checkbox";
-         selectBox.className = "transfer-select";
-         selectBox.dataset.authIndex = acc.auth_index || "";
-         selectBox.title = "选择此账号用于导出";
-         selectBox.onclick = (e) => e.stopPropagation();
-         nameRow.appendChild(selectBox);
-         const emailSpan = document.createElement("span");
+        selectBox.type = "checkbox";
+        selectBox.className = "wb-checkbox transfer-select";
+        selectBox.dataset.authIndex = acc.auth_index || "";
+        selectBox.checked = checkedAuthIndexes.has(selectBox.dataset.authIndex);
+        selectBox.onchange = updateTransferControls;
+        selectHit.appendChild(selectBox);
+        nameRow.appendChild(selectHit);
+        const emailSpan = document.createElement("span");
         emailSpan.className = "cred-email";
         const rawTitle = acc.label || acc.name || acc.id || acc.auth_index;
         emailSpan.textContent = formatAccountName(rawTitle);
@@ -2241,9 +2964,10 @@
 
         const qBtn = document.createElement("button");
         qBtn.type = "button";
-        qBtn.className = "btn-secondary btn-card-action";
-        qBtn.textContent = busyKeys.has("q:" + acc.auth_index) ? "..." : "刷新";
-        qBtn.disabled = busyKeys.has("q:" + acc.auth_index);
+        const qBusy = busyKeys.has("q:" + acc.auth_index);
+        qBtn.className = "btn-secondary btn-card-action" + (qBusy ? "" : " account-action-ready");
+        setButtonLoading(qBtn, qBusy, "刷新中", "刷新");
+        qBtn.disabled = qBusy || accountActionsLocked();
         qBtn.onclick = (e) => {
           e.stopPropagation();
           refreshSingleQuota(acc.auth_index);
@@ -2260,7 +2984,9 @@
         } else {
           dBtn.textContent = acc.site === "workbuddy" ? "签到" : "点亮";
         }
-        dBtn.disabled = acc.disabled || completedToday || busyKeys.has("d:" + acc.auth_index);
+        const dailyUnavailable = acc.disabled || completedToday || busyKeys.has("d:" + acc.auth_index);
+        if (!dailyUnavailable) dBtn.className += " account-action-ready";
+        dBtn.disabled = dailyUnavailable || accountActionsLocked();
         if (completedToday) dBtn.title = "今日已完成，无需重复操作";
         dBtn.onclick = (e) => {
           e.stopPropagation();
@@ -2272,6 +2998,7 @@
         card.appendChild(footer);
         container.appendChild(card);
       }
+      updateTransferControls();
     }
 
     function isDailyCompleted(acc) {
@@ -2287,7 +3014,7 @@
       siteBadge.textContent = acc.site === "workbuddy" ? "国内 CN" : acc.site === "workbuddy-ai" ? "国际 AI" : (acc.site || "--");
       siteBadge.className = "badge " + (acc.site === "workbuddy" ? "badge-cn" : "badge-intl");
       el("modelsPrefixBadge").textContent = "加载中...";
-      el("modelsListBody").innerHTML = '<div class="empty-state" style="border:0; background:transparent;">正在读取账号模型列表...</div>';
+      el("modelsListBody").innerHTML = '<div class="models-loading-state"><span class="btn-spinner"></span><span>正在读取账号模型列表...</span></div>';
       el("modelsSourceInfo").textContent = "--";
       el("cntModelsAll").textContent = "0";
       el("modelsModal").hidden = false;
@@ -2306,7 +3033,13 @@
 
     async function loadAccountModels(authIndex, refresh) {
       const btn = el("btnRefreshModels");
-      if (btn) btn.disabled = true;
+      if (btn) {
+        btn.disabled = true;
+        setButtonLoading(btn, true, "刷新中", "🔄 刷新");
+      }
+      if (refresh) {
+        el("modelsListBody").innerHTML = '<div class="models-loading-state"><span class="btn-spinner"></span><span>正在刷新账号模型列表...</span></div>';
+      }
       try {
         const suffix = refresh ? "&refresh=1" : "";
         const data = await apiFetch(MGMT_BASE + "/models?auth_index=" + encodeURIComponent(authIndex) + suffix);
@@ -2328,7 +3061,10 @@
           listEl.appendChild(errBox);
         }
       } finally {
-        if (btn) btn.disabled = false;
+        if (btn) {
+          setButtonLoading(btn, false, "刷新中", "🔄 刷新");
+          btn.disabled = false;
+        }
       }
     }
 
@@ -2464,19 +3200,22 @@
     }
 
     async function refreshAllAccounts() {
-      const btn = el("btnRefreshAll");
-      btn.disabled = true;
+      if (toolbarBusy()) return;
+      activeBatchOp = "refresh";
+      updateToolbarButtons();
       try {
         await loadDashboard(true);
         showToast("已刷新全部账号配额与今日状态", "success");
       } catch (err) {
         if (err.status !== 401) showToast("刷新失败：" + err.message, "error");
       } finally {
-        btn.disabled = false;
+        activeBatchOp = null;
+        renderDashboard();
       }
     }
 
     async function refreshSingleQuota(authIndex) {
+      if (accountActionsLocked() || busyKeys.has("q:" + authIndex)) return;
       busyKeys.add("q:" + authIndex);
       renderDashboard();
       try {
@@ -2496,6 +3235,7 @@
     }
 
     async function runSingleDaily(acc) {
+      if (accountActionsLocked() || busyKeys.has("d:" + acc.auth_index)) return;
       busyKeys.add("d:" + acc.auth_index);
       renderDashboard();
       try {
@@ -2518,8 +3258,9 @@
     }
 
     async function runBatch(endpoint, btnId, label) {
-      const btn = el(btnId);
-      btn.disabled = true;
+      if (toolbarBusy()) return;
+      activeBatchOp = endpoint === "/checkin" ? "checkin" : "daily-bonus";
+      updateToolbarButtons();
       try {
         const res = await apiFetch(MGMT_BASE + endpoint, {
           method: "POST",
@@ -2533,65 +3274,207 @@
       } catch (err) {
         if (err.status !== 401) showToast(`${label}失败：` + err.message, "error");
       } finally {
-        btn.disabled = false;
+        activeBatchOp = null;
         renderDashboard();
       }
     }
 
     async function exportSelectedAccounts() {
+      if (toolbarBusy()) return;
       const accountIds = Array.from(document.querySelectorAll(".transfer-select:checked"))
         .map(input => input.dataset.authIndex).filter(Boolean);
       if (accountIds.length === 0) { showToast("请先勾选要导出的账号", "error"); return; }
+      activeTransferOp = "export";
+      refreshToolbarButtons();
       try {
         const data = await apiFetch(MGMT_BASE + "/transfer/export", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ auth_indexes: accountIds })
         });
-        const blob = new Blob([JSON.stringify(data.accounts || [], null, 2)], { type: "application/json;charset=utf-8" });
+        const accounts = data.accounts || [];
+        const blob = new Blob([JSON.stringify({ accounts }, null, 2)], { type: "application/json;charset=utf-8" });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob); link.download = "workbuddy-accounts.json"; link.click();
         URL.revokeObjectURL(link.href);
-        showToast(`已导出 ${data.accounts.length} 个账号`, "success");
+        document.querySelectorAll(".transfer-select:checked").forEach(input => {
+          input.checked = false;
+        });
+        showToast(`已导出 ${accounts.length} 个账号`, "success");
       } catch (err) { if (err.status !== 401) showToast("导出失败：" + err.message, "error"); }
+      finally {
+        activeTransferOp = null;
+        refreshToolbarButtons();
+      }
+    }
+
+    let pendingTransferText = "";
+    let pendingTransferPreview = [];
+
+    function setTransferModalError(message) {
+      const box = el("transferModalError");
+      if (!box) return;
+      box.textContent = message || "";
+      box.hidden = !message;
+    }
+
+    function closeTransferModal() {
+      const modal = el("transferModal");
+      if (modal) modal.hidden = true;
+      pendingTransferText = "";
+      pendingTransferPreview = [];
+      setTransferModalError("");
+    }
+
+    function transferRowLabel(account) {
+      const parts = [];
+      if (account.nickname) parts.push(account.nickname);
+      if (account.email) parts.push(account.email);
+      if (account.uid) parts.push("UID " + account.uid);
+      return parts.length ? parts.join(" · ") : `记录 ${account.index + 1}`;
+    }
+
+    function renderTransferPreview() {
+      const list = el("transferPreviewList");
+      if (!list) return;
+      list.textContent = "";
+      pendingTransferPreview.forEach((account) => {
+        const row = document.createElement("label");
+        row.className = "transfer-preview-row" + (account.importable ? "" : " unimportable");
+        const box = document.createElement("input");
+        box.type = "checkbox";
+        box.className = "wb-checkbox transfer-preview-select";
+        box.dataset.index = String(account.index);
+        box.disabled = !account.importable;
+        box.checked = Boolean(account.importable);
+        box.onchange = updateTransferConfirmState;
+        row.appendChild(box);
+
+        const name = document.createElement("span");
+        name.className = "transfer-preview-name";
+        name.textContent = transferRowLabel(account);
+        row.appendChild(name);
+
+        if (account.site) {
+          const site = document.createElement("span");
+          site.className = "badge " + (account.site === "workbuddy" ? "badge-cn" : "badge-intl");
+          site.textContent = account.site === "workbuddy" ? "国内 CN" : "国际 AI";
+          row.appendChild(site);
+        }
+
+        const problem = document.createElement("span");
+        problem.className = "transfer-preview-problem";
+        problem.textContent = account.importable
+          ? (account.has_token ? "可导入" : "缺少令牌")
+          : account.problem || "不可导入";
+        row.appendChild(problem);
+        list.appendChild(row);
+      });
+      const total = pendingTransferPreview.length;
+      const importable = pendingTransferPreview.filter(account => account.importable).length;
+      el("transferPreviewTotal").textContent = String(total);
+      el("transferPreviewImportable").textContent = String(importable);
+      updateTransferConfirmState();
+    }
+
+    function selectedTransferIndexes() {
+      return Array.from(document.querySelectorAll(".transfer-preview-select:checked"))
+        .map(input => Number(input.dataset.index))
+        .filter(index => Number.isInteger(index));
+    }
+
+    function updateTransferConfirmState() {
+      const selected = selectedTransferIndexes();
+      const button = el("btnTransferConfirm");
+      if (button) button.disabled = toolbarBusy() || !pendingTransferText || selected.length === 0;
+      const summary = el("transferPreviewSummary");
+      if (summary) summary.textContent = `已选择 ${selected.length} 条记录`;
+      const selectAll = el("transferSelectAll");
+      if (selectAll) {
+        const importable = pendingTransferPreview.filter(account => account.importable).length;
+        selectAll.checked = importable > 0 && selected.length === importable;
+        selectAll.indeterminate = selected.length > 0 && selected.length < importable;
+      }
+    }
+
+    function toggleTransferSelectAll(checked) {
+      document.querySelectorAll(".transfer-preview-select:not(:disabled)")
+        .forEach((input) => { input.checked = Boolean(checked); });
+      updateTransferConfirmState();
     }
 
     async function importAccountsFromFile(event) {
       const file = event.target.files && event.target.files[0];
       event.target.value = "";
       if (!file) return;
+      if (toolbarBusy()) return;
+      activeTransferOp = "preview";
+      refreshToolbarButtons();
       try {
         const text = await file.text();
         const preview = await apiFetch(MGMT_BASE + "/transfer/preview", {
           method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text })
         });
-        const count = (preview.accounts || []).length;
-        const tokenCount = (preview.accounts || []).filter(account => account.has_token).length;
-        if (!window.confirm(`文件包含 ${count} 条记录，其中 ${tokenCount} 条有访问令牌。确认导入？令牌不会显示在预览中。`)) return;
-        const indexes = Array.from({ length: count }, (_, index) => index);
+        pendingTransferText = text;
+        pendingTransferPreview = preview.accounts || [];
+        const badge = el("transferSourceBadge");
+        if (badge) badge.textContent = file.name;
+        setTransferModalError("");
+        renderTransferPreview();
+        el("transferModal").hidden = false;
+      } catch (err) {
+        if (err.status !== 401) showToast("导入失败：" + err.message, "error");
+      } finally {
+        activeTransferOp = null;
+        refreshToolbarButtons();
+      }
+    }
+
+    async function confirmTransferImport() {
+      if (toolbarBusy() || !pendingTransferText) return;
+      const indexes = selectedTransferIndexes();
+      if (indexes.length === 0) { setTransferModalError("请至少选择一条可导入记录"); return; }
+      activeTransferOp = "import";
+      refreshToolbarButtons();
+      setTransferModalError("");
+      try {
         const result = await apiFetch(MGMT_BASE + "/transfer/import", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, indexes })
+          body: JSON.stringify({ text: pendingTransferText, indexes })
         });
+        closeTransferModal();
         await loadDashboard(false);
-        showToast(`导入完成：${result.imported} 条，跳过 ${result.skipped} 条`, "success");
-      } catch (err) { if (err.status !== 401) showToast("导入失败：" + err.message, "error"); }
+        const duplicates = result.duplicated ? `，覆盖重复 ${result.duplicated} 条` : "";
+        showToast(`导入完成：${result.imported} 条，跳过 ${result.skipped} 条${duplicates}`, "success");
+      } catch (err) {
+        if (err.status !== 401) setTransferModalError(err.message);
+      } finally {
+        activeTransferOp = null;
+        refreshToolbarButtons();
+      }
     }
 
     // ---- Boot ----
     async function initializeApp() {
       updateMaskButton();
+      updateToolbarButtons();
       const key = getManagementKey();
       if (!key) {
         el("credentialsContainer").innerHTML = '<div class="empty-state">等待连接 CPA 管理接口（请点击右上角 🔑 密钥 进行认证）</div>';
         openKeyModal();
         return;
       }
+      dashboardLoading = true;
+      updateToolbarButtons();
       try {
         const data = await loadDashboard(false);
         if (data && data.accounts && data.accounts.some(a => !a.quota && !a.disabled)) {
-          loadDashboard(true).catch(() => {});
+          await loadDashboard(true).catch(() => {});
         }
-      } catch (_) {}
+      } catch (_) {
+      } finally {
+        dashboardLoading = false;
+        renderDashboard();
+      }
     }
 
     initializeApp();

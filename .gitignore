@@ -21,5 +21,3 @@ vendor/
 Thumbs.db
 *.swp
 *.tmp
-
-.worktrees/

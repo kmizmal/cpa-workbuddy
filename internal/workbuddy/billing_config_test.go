@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -15,6 +17,7 @@ import (
 )
 
 func TestConfigYAMLAndOptionAModelPrefixRouting(t *testing.T) {
+	t.Setenv(workbuddy.ConfigPathEnv, filepath.Join(t.TempDir(), "config.json"))
 	s := workbuddy.New()
 	defer s.Close()
 
@@ -104,6 +107,42 @@ func TestConfigYAMLAndOptionAModelPrefixRouting(t *testing.T) {
 	}
 }
 
+func TestStandaloneJSONConfigPersistence(t *testing.T) {
+	cfgPath := filepath.Join(t.TempDir(), "nested", "config.json")
+	t.Setenv(workbuddy.ConfigPathEnv, cfgPath)
+
+	s1 := workbuddy.New()
+	defer s1.Close()
+
+	want := workbuddy.PluginConfig{
+		CNModelPrefix:      false,
+		IntlModelPrefix:    true,
+		AutoCheckinEnabled: false,
+		AutoCheckinTime:    "07:45",
+	}
+	if err := s1.UpdateConfig(want); err != nil {
+		t.Fatalf("UpdateConfig failed: %v", err)
+	}
+	if _, err := os.Stat(cfgPath); err != nil {
+		t.Fatalf("expected persisted config file at %s: %v", cfgPath, err)
+	}
+
+	// New service instance loads persisted JSON config on startup.
+	s2 := workbuddy.New()
+	defer s2.Close()
+	if got := s2.Config(); got != want {
+		t.Fatalf("reloaded config mismatch: got %+v, want %+v", got, want)
+	}
+
+	// Host Reconfigure with different YAML should not overwrite persisted JSON config.
+	if err := s2.Reconfigure([]byte("cn_model_prefix: true\nauto_checkin_time: \"10:15\"\n")); err != nil {
+		t.Fatalf("Reconfigure failed: %v", err)
+	}
+	if got := s2.Config(); got != want {
+		t.Fatalf("Reconfigure should preserve persisted JSON config: got %+v, want %+v", got, want)
+	}
+}
+
 type fakeHostHarness struct {
 	mu      sync.Mutex
 	files   []map[string]any
@@ -111,6 +150,9 @@ type fakeHostHarness struct {
 	saved   map[string]json.RawMessage
 	calls   []string
 	handler func(method, url string, body []byte) (int, []byte)
+	// callOverride lets a test fail a specific host method. handled=false falls
+	// through to the default fake behaviour.
+	callOverride func(method string) (reply []byte, err error, handled bool)
 }
 
 func newFakeHostHarness(t *testing.T, auths []workbuddy.AuthData) *fakeHostHarness {
@@ -150,7 +192,13 @@ func newFakeHostHarness(t *testing.T, auths []workbuddy.AuthData) *fakeHostHarne
 func (h *fakeHostHarness) call(method string, raw []byte) ([]byte, error) {
 	h.mu.Lock()
 	h.calls = append(h.calls, method)
+	override := h.callOverride
 	h.mu.Unlock()
+	if override != nil {
+		if reply, err, handled := override(method); handled {
+			return reply, err
+		}
+	}
 
 	switch method {
 	case "host.auth.list":
