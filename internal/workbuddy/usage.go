@@ -812,7 +812,7 @@ func extractTokenUsageFromPayload(payload []byte) (TokenUsage, bool) {
 	// lines before their data: line. Use the SSE decoder rather than requiring
 	// the payload itself to start with "data:".
 	var decoder eventStreamDecoder
-	var best TokenUsage
+	var merged TokenUsage
 	var found bool
 	frame := append(append([]byte(nil), trimmed...), '\n', '\n')
 	if _, err := decoder.feed(frame, func(event streamEvent) (bool, error) {
@@ -820,14 +820,20 @@ func extractTokenUsageFromPayload(payload []byte) (TokenUsage, bool) {
 			return false, nil
 		}
 		if u, ok := extractTokenUsageFromJSON(event.data); ok {
-			best = u
+			if found {
+				merged = mergeTokenUsage(merged, u)
+			} else {
+				merged = u
+			}
 			found = true
 		}
 		return false, nil
-	}, func() error { return nil }); err != nil {
+	}, func() error {
+		return fmt.Errorf("usage SSE event exceeds %d bytes", chatEventLimit)
+	}); err != nil {
 		return TokenUsage{}, false
 	}
-	return best, found
+	return merged, found
 }
 
 func extractTokenUsageFromJSON(data []byte) (TokenUsage, bool) {
@@ -893,6 +899,29 @@ func tokenUsageFromFields(fields *tokenUsageFields) (TokenUsage, bool) {
 		}, true
 	}
 	return TokenUsage{}, false
+}
+
+// mergeTokenUsage combines fields observed in separate streaming frames.
+// Anthropic emits input and cache usage in message_start and output usage in
+// message_delta, so replacing the whole struct would discard earlier fields.
+func mergeTokenUsage(current, next TokenUsage) TokenUsage {
+	merged := current
+	if next.InputTokens > merged.InputTokens {
+		merged.InputTokens = next.InputTokens
+	}
+	if next.OutputTokens > merged.OutputTokens {
+		merged.OutputTokens = next.OutputTokens
+	}
+	if next.CachedTokens > merged.CachedTokens {
+		merged.CachedTokens = next.CachedTokens
+	}
+	if total := merged.InputTokens + merged.OutputTokens; total > merged.TotalTokens {
+		merged.TotalTokens = total
+	}
+	if next.TotalTokens > merged.TotalTokens {
+		merged.TotalTokens = next.TotalTokens
+	}
+	return merged
 }
 
 func (s *Service) lookupModelCreditFactor(_, _ string) float64 {

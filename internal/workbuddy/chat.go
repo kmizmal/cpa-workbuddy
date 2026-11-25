@@ -291,7 +291,7 @@ func (s *Service) execute(ctx context.Context, method string, raw []byte, call f
 					return failure("request_cancelled", "WorkBuddy request was cancelled or expired", 408)
 				}
 				if u, ok := extractTokenUsageFromPayload(payload); ok {
-					streamUsage = u
+					streamUsage = mergeTokenUsage(streamUsage, u)
 				}
 				return hostRPC(call, "host.stream.emit", struct {
 					StreamID string `json:"stream_id"`
